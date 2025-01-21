@@ -5,9 +5,10 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/ognick/job-interview-playground/pkg/logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/ognick/job-interview-playground/pkg/logger"
 )
 
 // ZapLogger is a logger implementation using zap
