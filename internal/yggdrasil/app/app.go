@@ -26,7 +26,6 @@ func Run() {
 	// Init router
 	router := gin.Default()
 	router.Use(gin.Recovery())
-	router.Use(gin.Logger())
 
 	router.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "ok")
