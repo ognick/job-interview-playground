@@ -45,21 +45,6 @@ func getQuotableQuote(ctx context.Context) (string, error) {
 	return data.Content, nil
 }
 
-func getFavqsWisdom(ctx context.Context) (string, error) {
-	type dto struct {
-		Quote struct {
-			Body string `json:"body"`
-		} `json:"quote"`
-	}
-
-	data, err := request.Get[dto](ctx, "https://favqs.com/api/qotd")
-	if err != nil {
-		return "", fmt.Errorf("failed to get quote from favqs: %w", err)
-	}
-
-	return data.Quote.Body, nil
-}
-
 type Usecase struct {
 	log          logger.Logger
 	internalRepo repo
@@ -94,7 +79,7 @@ func (u *Usecase) GetWisdom(ctx context.Context) (domain.Wisdom, error) {
 	// Run the goroutines to fetch data from the quote providers1
 	go func() {
 		defer wg.Done()
-		quote, err := getFavqsWisdom(ctx)
+		quote, err := getFavqsQuote(ctx)
 		out <- res{
 			wisdom: domain.Wisdom{
 				Content: quote,
