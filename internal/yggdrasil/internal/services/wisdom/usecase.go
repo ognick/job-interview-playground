@@ -2,13 +2,13 @@ package wisdom
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/ognick/job-interview-playground/internal/yggdrasil/internal/domain"
 	"github.com/ognick/job-interview-playground/pkg/logger"
-	"github.com/ognick/job-interview-playground/pkg/quotes/favqs"
-	"github.com/ognick/job-interview-playground/pkg/quotes/quotable"
+	"github.com/ognick/job-interview-playground/pkg/request"
 )
 
 const requestTimeout = 1 * time.Second
@@ -17,11 +17,52 @@ type repo interface {
 	GetWisdom(ctx context.Context) (domain.Wisdom, error)
 }
 
+func getFavqsQuote(ctx context.Context) (string, error) {
+	type dto struct {
+		Quote struct {
+			Body string `json:"body"`
+		} `json:"quote"`
+	}
+
+	data, err := request.Get[dto](ctx, "https://favqs.com/api/qotd")
+	if err != nil {
+		return "", fmt.Errorf("failed to get quote from favqs: %w", err)
+	}
+
+	return data.Quote.Body, nil
+}
+
+func getQuotableQuote(ctx context.Context) (string, error) {
+	type dto struct {
+		Content string `json:"content"`
+	}
+
+	data, err := request.Get[dto](ctx, "http://api.quotable.io/random")
+	if err != nil {
+		return "", fmt.Errorf("failed to get quote from favqs: %w", err)
+	}
+
+	return data.Content, nil
+}
+
+func getFavqsWisdom(ctx context.Context) (string, error) {
+	type dto struct {
+		Quote struct {
+			Body string `json:"body"`
+		} `json:"quote"`
+	}
+
+	data, err := request.Get[dto](ctx, "https://favqs.com/api/qotd")
+	if err != nil {
+		return "", fmt.Errorf("failed to get quote from favqs: %w", err)
+	}
+
+	return data.Quote.Body, nil
+}
+
 type Usecase struct {
-	log            logger.Logger
-	internalRepo   repo
-	quoteProvider1 *favqs.FavqsQuoteProvider
-	quoteProvider2 *quotable.QuotableQuoteProvider
+	log          logger.Logger
+	internalRepo repo
 }
 
 func NewUsecase(
@@ -29,15 +70,13 @@ func NewUsecase(
 	internalRepo repo,
 ) *Usecase {
 	return &Usecase{
-		log:            log,
-		internalRepo:   internalRepo,
-		quoteProvider1: favqs.NewFavqsQuoteProvider(),
-		quoteProvider2: quotable.NewQuotableQuoteProvider(),
+		log:          log,
+		internalRepo: internalRepo,
 	}
 }
 
-func (u *Usecase) GetWisdom(c context.Context) (domain.Wisdom, error) {
-	ctx, cancel := context.WithTimeout(c, requestTimeout)
+func (u *Usecase) GetWisdom(ctx context.Context) (domain.Wisdom, error) {
+	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
 	type res struct {
@@ -55,11 +94,11 @@ func (u *Usecase) GetWisdom(c context.Context) (domain.Wisdom, error) {
 	// Run the goroutines to fetch data from the quote providers1
 	go func() {
 		defer wg.Done()
-		data, err := u.quoteProvider1.GetData(ctx)
+		quote, err := getFavqsWisdom(ctx)
 		out <- res{
 			wisdom: domain.Wisdom{
-				Content: data.Quote.Body,
-				Source:  "Favqs",
+				Content: quote,
+				Source:  "favqs",
 			},
 			err: err,
 		}
@@ -67,11 +106,11 @@ func (u *Usecase) GetWisdom(c context.Context) (domain.Wisdom, error) {
 	// Run the goroutines to fetch data from the quote providers2
 	go func() {
 		defer wg.Done()
-		data, err := u.quoteProvider2.GetData(ctx)
+		quote, err := getQuotableQuote(ctx)
 		out <- res{
 			wisdom: domain.Wisdom{
-				Content: data.Content,
-				Source:  "Quotable",
+				Content: quote,
+				Source:  "quotable",
 			},
 			err: err,
 		}
