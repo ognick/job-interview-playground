@@ -2,6 +2,8 @@ module github.com/ognick/job-interview-playground
 
 go 1.22.3
 
+require github.com/gin-gonic/gin v1.10.0
+
 require (
 	github.com/caarlos0/env/v7 v7.1.0
 	github.com/gin-gonic/gin v1.10.0
