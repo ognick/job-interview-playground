@@ -37,6 +37,7 @@ func (repo *InmemoryRepository) GetWisdom(_ context.Context) (domain.Wisdom, err
 	pos := rand.Intn(size)
 	wisdom := domain.Wisdom{
 		Content: repo.words[pos],
+		Source:  "inmemory",
 	}
 	return wisdom, nil
 }
